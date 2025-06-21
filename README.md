@@ -24,8 +24,8 @@ AI Interview Co‑Pilot is an intelligent voice-interactive mock interview tool 
 
 ## 📸 Screenshots
 
-| Home Page | Product Page |
-|-----------|--------------|
+| Home Page |
+|-----------|
 | ![Home](./Screenshots/Home.jpg) | 
 
 
