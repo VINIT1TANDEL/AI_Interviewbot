@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon, SquareIcon, MicIcon, Loader2Icon, SparklesIcon, MessageSquareTextIcon, CircleCheckIcon, XCircleIcon, XIcon, AlertTriangleIcon } from 'lucide-react';
 
-
-
 const GITHUB_PAT = import.meta.env.VITE_GITHUB_PAT;
 class OpenAIClient {
   constructor(options) {
     this.baseURL = options.baseURL;
-    this.apiKey = options.apiKey; // This will be our GITHUB_PAT from env var
+    this.apiKey = options.apiKey;
   }
 
   chat = {
@@ -18,7 +16,7 @@ class OpenAIClient {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${this.apiKey}` // Using Bearer token for PAT
+              'Authorization': `Bearer ${this.apiKey}`
             },
             body: JSON.stringify(params)
           });
@@ -29,10 +27,10 @@ class OpenAIClient {
           }
 
           const data = await response.json();
-          return data; // This will contain the 'choices' array
+          return data;
         } catch (error) {
           console.error("Fetch error:", error);
-          throw error; // Re-throw to be caught by calling function
+          throw error;
         }
       }
     }
@@ -40,30 +38,25 @@ class OpenAIClient {
 }
 
 function App() {
-  // Access GITHUB_PAT from environment variables provided by Vite
   const GITHUB_PAT = import.meta.env.VITE_GITHUB_PAT;
 
-  // Initialize the client after ensuring GITHUB_PAT is available
   const clientRef = useRef(null);
-  const [isClientReady, setIsClientReady] = useState(false); // New state to track client readiness
+  const [isClientReady, setIsClientReady] = useState(false);
 
   useEffect(() => {
-    // Initialize clientRef.current only once when GITHUB_PAT is available and client not yet created
     if (GITHUB_PAT && !clientRef.current) {
       clientRef.current = new OpenAIClient({
         baseURL: "https://models.github.ai/inference",
         apiKey: GITHUB_PAT
       });
-      setIsClientReady(true); // Set client as ready
-      setError(''); // Clear any previous error about PAT not set
+      setIsClientReady(true);
+      setError('');
     } else if (!GITHUB_PAT) {
-      // If GITHUB_PAT is not set, display an error and mark client as not ready
       setError("GITHUB_PAT environment variable is not set. Please check your .env file or Vercel settings.");
       console.error("VITE_GITHUB_PAT environment variable is not set.");
       setIsClientReady(false);
     }
-  }, [GITHUB_PAT]); // Depend on GITHUB_PAT to re-run if it changes
-
+  }, [GITHUB_PAT]);
 
   const [selectedRole, setSelectedRole] = useState('SDE');
   const [selectedRound, setSelectedRound] = useState('Technical');
@@ -74,27 +67,22 @@ function App() {
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [error, setError] = useState('');
   const [interviewStarted, setInterviewStarted] = useState(false);
-  const [interviewRoundCount, setInterviewRoundCount] = useState(0); // Tracks current question number
+  const [interviewRoundCount, setInterviewRoundCount] = useState(0);
 
-  // Speech API States
   const [isSpeakingAI, setIsSpeakingAI] = useState(false);
   const [isListeningUser, setIsListeningUser] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState(''); // What user is currently speaking
+  const [liveTranscript, setLiveTranscript] = useState('');
 
-  // Refs for Speech Recognition and Speech Synthesis
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
 
-
-  // Initialize Speech Recognition on component mount
   useEffect(() => {
-    // Check for browser support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false; // Listen for a single utterance
-      recognitionRef.current.interimResults = true; // Get interim results while speaking
-      recognitionRef.current.lang = 'en-US'; // Set language
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
 
       recognitionRef.current.onresult = (event) => {
         let interimTranscript = '';
@@ -131,7 +119,6 @@ function App() {
       console.warn("Web Speech Recognition API not supported.");
     }
 
-    // Clean up synthesis on unmount
     return () => {
       if (synthRef.current.speaking) {
         synthRef.current.cancel();
@@ -139,7 +126,6 @@ function App() {
     };
   }, []);
 
-  // Helper function for displaying messages (question, feedback, error) with dynamic styling
   const displayMessage = (message, type) => {
     if (type === 'error') {
       setError(message);
@@ -147,7 +133,7 @@ function App() {
     } else if (type === 'feedback') {
       setFeedback(message);
       setError('');
-    } else { // type === 'question'
+    } else {
       setCurrentQuestion(message);
       setError('');
       setFeedback('');
@@ -155,7 +141,6 @@ function App() {
   };
 
   const speakText = async (text, callback = () => {}) => {
-    // Always use browser's SpeechSynthesis
     const synth = window.speechSynthesis;
     if (!synth) {
       setError("Text-to-Speech (TTS) is not supported in this browser.");
@@ -163,7 +148,6 @@ function App() {
       return;
     }
     
-    // Cancel any ongoing speech before starting new one
     if (synth.speaking) {
         synth.cancel();
     }
@@ -179,11 +163,10 @@ function App() {
 
   const startListening = () => {
     if (recognitionRef.current) {
-      // Clear previous transcript and answer before starting new listening session
       setLiveTranscript('');
-      setError(''); // Clear any previous errors
-      setUserAnswer(''); // Clear user answer field for new speech input
-      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel(); // Stop AI speech if it's playing
+      setError('');
+      setUserAnswer('');
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
 
       setIsListeningUser(true);
       recognitionRef.current.start();
@@ -202,20 +185,20 @@ function App() {
   };
 
   const generateAndSpeakQuestion = async () => {
-    if (!isClientReady || !clientRef.current) { // Ensure client is ready
+    if (!isClientReady || !clientRef.current) {
       setError("API client not initialized. Please ensure GITHUB_PAT is set correctly.");
       setIsLoadingQuestion(false);
       return;
     }
 
-    setFeedback(''); // Clear feedback when generating new question
-    setUserAnswer(''); // Clear user answer input for new question
-    setLiveTranscript(''); // Clear live transcript
-    setError(''); // Clear any previous errors
+    setFeedback('');
+    setUserAnswer('');
+    setLiveTranscript('');
+    setError('');
     setCurrentQuestion('Generating your question...');
     setIsLoadingQuestion(true);
-    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel(); // Stop any ongoing speech
-    stopListening(); // Stop listening if active
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    stopListening();
 
     try {
       const promptMessage = `As an experienced interviewer for a ${selectedRole} role, please generate a concise and professional ${selectedRound} interview question.
@@ -243,7 +226,7 @@ Example for HR Behavioral: "Describe a time you had to deal with a difficult col
         const questionText = response.choices[0].message.content.trim();
         displayMessage(questionText, 'question');
         speakText(questionText);
-        setInterviewRoundCount(prev => prev + 1); // Increment question count
+        setInterviewRoundCount(prev => prev + 1);
       } else {
         displayMessage('Error: Could not generate a question. Invalid response from API.', 'error');
       }
@@ -257,12 +240,12 @@ Example for HR Behavioral: "Describe a time you had to deal with a difficult col
 
   const handleStartInterview = async () => {
     setInterviewStarted(true);
-    setInterviewRoundCount(0); // Reset round count
+    setInterviewRoundCount(0);
     generateAndSpeakQuestion();
   };
 
   const handleSubmitAnswer = async () => {
-    stopListening(); // Stop listening if still active
+    stopListening();
     if (!userAnswer.trim()) {
       displayMessage("Please provide an answer before submitting.", 'error');
       return;
@@ -271,7 +254,7 @@ Example for HR Behavioral: "Describe a time you had to deal with a difficult col
     setFeedback('');
     setError('');
     setIsLoadingFeedback(true);
-    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel(); // Stop any ongoing speech
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
 
     try {
       const feedbackPrompt = `As an experienced interviewer for a ${selectedRole} role, you have asked the following ${selectedRound} question:
@@ -297,13 +280,11 @@ After providing feedback, ask a new, follow-up question for the same role and ro
         ],
         model: "openai/gpt-4o",
         temperature: 0.7,
-        max_tokens: 500 // Increased max_tokens to accommodate both feedback and a new question
+        max_tokens: 500
       });
 
       if (response && response.choices && response.choices.length > 0 && response.choices[0].message && response.choices[0].message.content) {
         const fullResponse = response.choices[0].message.content.trim();
-        // Assuming the model provides feedback first, then the next question.
-        // We'll try to split it. This might need refinement based on actual LLM output patterns.
         const feedbackAndNextQuestion = fullResponse.split(/\n\n(?:Next Question|Follow-up Question):/i);
 
         let extractedFeedback = fullResponse;
@@ -313,21 +294,16 @@ After providing feedback, ask a new, follow-up question for the same role and ro
             extractedFeedback = feedbackAndNextQuestion[0].trim();
             extractedNextQuestion = feedbackAndNextQuestion[1].trim();
         } else {
-            // If the model doesn't split clearly, try to find the last sentence as question or assume all is feedback
-            // For robustness, if we can't reliably split, just display the full response as feedback.
-            // A more robust solution would involve guiding the LLM to output structured JSON for feedback and question.
             console.warn("Could not clearly separate feedback and next question from LLM response. Displaying full response as feedback.");
         }
         
         displayMessage(extractedFeedback, 'feedback');
         speakText(extractedFeedback, () => {
             if (extractedNextQuestion) {
-                // If a next question was clearly identified, set it and speak it
                 setCurrentQuestion(extractedNextQuestion);
                 speakText(extractedNextQuestion);
                 setInterviewRoundCount(prev => prev + 1);
             } else {
-                // If no clear next question, generate a new one from scratch after feedback
                 generateAndSpeakQuestion();
             }
         });
@@ -351,11 +327,10 @@ After providing feedback, ask a new, follow-up question for the same role and ro
     setUserAnswer('');
     setLiveTranscript('');
     setCurrentQuestion('Interview ended. Click "Start Interview" to begin a new session.');
-    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel(); // Stop any ongoing speech
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     stopListening();
   };
 
-  // Initial message when the component mounts
   useEffect(() => {
     setCurrentQuestion('Click "Start Interview" to get your first question!');
   }, []);
@@ -364,7 +339,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex items-center justify-center p-4 antialiased">
       <div className="container bg-white rounded-3xl shadow-xl p-8 md:p-10 flex flex-col gap-8 w-full max-w-3xl border border-gray-200 backdrop-blur-sm bg-opacity-95">
         
-        {/* Header */}
         <div className="text-center">
           <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4 animate-fadeIn">
             🤖 AI Interview Co-Pilot
@@ -374,7 +348,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
           </p>
         </div>
 
-        {/* API Client Status Indicator */}
         {!isClientReady && GITHUB_PAT && (
           <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-xl flex items-center gap-3 shadow-md mb-6">
             <AlertTriangleIcon className="flex-shrink-0 w-6 h-6" />
@@ -399,8 +372,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
           </div>
         )}
 
-
-        {/* Interview Settings Section */}
         <div className="p-6 bg-white rounded-2xl shadow-lg border border-gray-100 transform transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <SparklesIcon className="text-purple-500 w-6 h-6"/> Interview Settings
@@ -414,7 +385,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 pr-10"
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  // Disabled based on isClientReady to ensure API calls can be made
                   disabled={!isClientReady || isLoadingQuestion || isLoadingFeedback || isSpeakingAI || isListeningUser || interviewStarted}
                 >
                   <option value="SDE">SDE (Software Development Engineer)</option>
@@ -436,7 +406,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 pr-10"
                   value={selectedRound}
                   onChange={(e) => setSelectedRound(e.target.value)}
-                  // Disabled based on isClientReady to ensure API calls can be made
                   disabled={!isClientReady || isLoadingQuestion || isLoadingFeedback || isSpeakingAI || isListeningUser || interviewStarted}
                 >
                   <option value="Technical">Technical</option>
@@ -452,7 +421,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
             <button
               onClick={handleStartInterview}
               className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 text-lg disabled:opacity-60 disabled:transform-none disabled:shadow-md"
-              // Disable if client not ready
               disabled={!isClientReady || isLoadingQuestion || isSpeakingAI || isListeningUser || interviewStarted}
             >
               {isLoadingQuestion ? 'Starting Interview...' : 'Start Interview'}
@@ -460,14 +428,12 @@ After providing feedback, ask a new, follow-up question for the same role and ro
           </div>
         </div>
 
-        {/* Interview Area */}
         {interviewStarted && (
           <div id="interview-area" className="p-6 bg-white rounded-2xl shadow-lg border border-gray-100">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
               <MessageSquareTextIcon className="text-indigo-500 w-6 h-6"/> Your Interview <span className="text-base font-normal text-gray-500 ml-2">(Question {interviewRoundCount})</span>
             </h2>
             
-            {/* Question Display */}
             <div className="bg-indigo-50 text-indigo-900 border border-indigo-200 rounded-xl p-5 mb-6 shadow-sm relative min-h-[100px] flex flex-col justify-center items-center text-center text-xl font-medium leading-relaxed">
               {isLoadingQuestion ? (
                 <div className="spinner-large"></div>
@@ -487,7 +453,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
             </div>
             {isSpeakingAI && <p className="text-sm text-indigo-700 text-center mb-4 font-medium animate-pulse">AI is speaking...</p>}
 
-            {/* User Answer Input */}
             <div className="input-group mb-6">
               <label htmlFor="user-answer-input" className="block text-sm font-semibold text-gray-700 mb-2">Your Answer:</label>
               <textarea
@@ -501,7 +466,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
               ></textarea>
             </div>
 
-            {/* Speech Input Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <button
                 onClick={startListening}
@@ -528,7 +492,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
               </div>
             )}
 
-            {/* Submit Button */}
             <div className="mt-8 text-center">
               <button
                 onClick={handleSubmitAnswer}
@@ -547,25 +510,23 @@ After providing feedback, ask a new, follow-up question for the same role and ro
               </div>
             )}
 
-            {/* Feedback Display */}
             {feedback && (
               <div className="feedback-box bg-green-50 text-green-800 border border-green-200 rounded-xl p-5 mt-8 shadow-sm relative text-base leading-relaxed">
                 <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
                     <SparklesIcon className="text-green-600 w-5 h-5"/> Feedback for your Answer
                 </h3>
                 <p>{feedback}</p>
-                 <button
-                  onClick={() => speakText(feedback)}
-                  className="absolute bottom-3 right-3 px-4 py-2 bg-green-600 text-white rounded-full text-base shadow-md hover:bg-green-700 transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Replay Feedback"
-                  disabled={isSpeakingAI || isListeningUser}
-                >
-                  <PlayIcon size={18}/> {isSpeakingAI ? 'Speaking...' : 'Speak'}
-                </button>
+                   <button
+                    onClick={() => speakText(feedback)}
+                    className="absolute bottom-3 right-3 px-4 py-2 bg-green-600 text-white rounded-full text-base shadow-md hover:bg-green-700 transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Replay Feedback"
+                    disabled={isSpeakingAI || isListeningUser}
+                  >
+                    <PlayIcon size={18}/> {isSpeakingAI ? 'Speaking...' : 'Speak'}
+                  </button>
               </div>
             )}
 
-            {/* Error Display */}
             {error && (
               <div className="error-box bg-red-50 text-red-800 border border-red-200 rounded-xl p-5 mt-8 shadow-sm flex items-start gap-2 text-base leading-relaxed">
                 <XCircleIcon className="text-red-600 flex-shrink-0 mt-1" size={20}/>
@@ -576,7 +537,6 @@ After providing feedback, ask a new, follow-up question for the same role and ro
               </div>
             )}
 
-            {/* End Interview Button */}
             <div className="mt-8 text-center">
                 <button
                     onClick={handleEndInterview}
@@ -590,7 +550,7 @@ After providing feedback, ask a new, follow-up question for the same role and ro
         )}
         {!interviewStarted && (
            <p className="text-center text-gray-500 mt-6 text-lg">
-              Select your role and round type above and click '<span className="font-semibold text-indigo-600">Start Interview</span>' to begin your practice session.
+             Select your role and round type above and click '<span className="font-semibold text-indigo-600">Start Interview</span>' to begin your practice session.
            </p>
         )}
       </div>
