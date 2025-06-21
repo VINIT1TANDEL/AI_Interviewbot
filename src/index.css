@@ -1,0 +1,73 @@
+/* src/index.css */
+/* Order matters: @import must precede all other statements */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss"; /* Corrected to simply import tailwindcss with the Vite plugin */
+
+
+/* Custom global styles to enhance aesthetic */
+body {
+    font-family: 'Inter', sans-serif;
+    /* Removed fixed background-color, using gradient on main div */
+}
+
+/* Base styles for containers, inputs, buttons */
+.container {
+    /* Styles are mostly in JSX via Tailwind classes now */
+}
+
+/* Reusable button primary styles - mostly moved to JSX, but defining base properties here */
+/* These classes are now applied via the `button-primary` class in JSX */
+.button-primary {
+    /* Defined in JSX now: bg-gradient-to-r from-purple-500 to-indigo-600 etc. */
+    /* Add any common transitions/hover effects if not covered by direct Tailwind */
+    transition: all 0.3s ease-in-out;
+}
+
+/* Spinner for loading */
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #4f46e5;
+    animation: spin 1s ease infinite;
+    margin: 1.5rem auto;
+}
+
+/* Larger spinner for main loading states */
+.spinner-large {
+    border: 6px solid rgba(0, 0, 0, 0.1);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border-left-color: #a78bfa; /* Light purple */
+    animation: spin 1s ease infinite;
+    margin: 2rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Basic animation for elements fading in */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+.animation-delay-300 {
+    animation-delay: 0.3s;
+}
+
+/* Specific styling for the custom select dropdown arrow */
+.input-group .relative select {
+    padding-right: 2.5rem; /* Make space for the custom arrow */
+}
+
+/* This is a common pattern for custom select arrows */
+.input-group .relative svg {
+    right: 1rem; /* Adjust position */
+}
